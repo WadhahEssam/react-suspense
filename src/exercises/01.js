@@ -3,17 +3,25 @@
 // http://localhost:3000/isolated/exercises/01
 
 import React from 'react'
-import {PokemonDataView} from '../utils'
+import {PokemonDataView, ErrorBoundary} from '../utils'
 import fetchPokemon from '../fetch-pokemon'
 
 let pokemon;
+let pokemonError;
 let pokemonPromise = fetchPokemon('pikachu').then(
   p => (pokemon = p),
+  e => (pokemonError = e), // catching an error
 )
 
 window.FETCH_TIME = 3000
 
 function PokemonInfo() {
+  // this is something  called error boundaries, it is a react feature, where you throw an error
+  // to tell react to render something if an error happened.
+  if (pokemonError) {
+    throw pokemonError;
+  }
+
   // this way is probably going to change, ( detecting when to return a promise )
   if (!pokemon) {
     throw pokemonPromise; 
@@ -37,9 +45,11 @@ function App() {
   // render the component that is inside of the <React.Suspense> 
   return (
     <div className="pokemon-info">
-      <React.Suspense fallback={<div>Loading pokemon info</div>}>
-        <PokemonInfo />
-      </React.Suspense>
+      <ErrorBoundary>
+        <React.Suspense fallback={<div>Loading pokemon info</div>}>
+          <PokemonInfo />
+        </React.Suspense>
+      </ErrorBoundary>
     </div>
   )
 }
