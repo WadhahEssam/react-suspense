@@ -6,27 +6,41 @@ import React from 'react'
 import {PokemonDataView, ErrorBoundary} from '../utils'
 import fetchPokemon from '../fetch-pokemon'
 
-let pokemon;
-let pokemonError;
-let pokemonPromise = fetchPokemon('pikachu').then(
-  p => (pokemon = p),
-  e => (pokemonError = e), // catching an error
-)
+
+// this is only to make the code that we already dealt with more readable, and it is suggested by facebook
+// in the react docs of suspense 
+function createResource(asyncFn) {
+  let result;
+  let error;
+  let promise = asyncFn().then(
+    r => (result = r),
+    e => (error = e), // catching an error
+  )
+
+  return {
+    read: () => {
+      // this is something  called error boundaries, it is a react feature, where you throw an error
+      // to tell react to render something if an error happened.
+      if (error) {
+        throw error;
+      }
+
+      // this way is probably going to change, ( detecting when to return a promise )
+      if (!result) {
+        throw promise; 
+      }
+
+      return result;
+    }
+  }
+}
+
+let pokemonResource = createResource(() => fetchPokemon('pikachu'))
 
 window.FETCH_TIME = 3000
 
 function PokemonInfo() {
-  // this is something  called error boundaries, it is a react feature, where you throw an error
-  // to tell react to render something if an error happened.
-  if (pokemonError) {
-    throw pokemonError;
-  }
-
-  // this way is probably going to change, ( detecting when to return a promise )
-  if (!pokemon) {
-    throw pokemonPromise; 
-  }
-
+  const pokemon = pokemonResource.read();
   return (
     <div>
       <div className="pokemon-info__img-wrapper">
